@@ -229,10 +229,10 @@ def test_permission_dependency_raises_exception(mocker):
         "active_principals_func",
         permission_exception,
     )
+
     assert Depends.call_count == 2
     args, kwargs = Depends.call_args_list[1]
     permission_func = args[0]
-
     with pytest.raises(HTTPException):
         permission_func()
 

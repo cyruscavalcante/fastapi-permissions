@@ -91,11 +91,19 @@ ALOW_ALL = (Allow, Everyone, All)  # acl shorthand, allows everything
 
 # the exception that will be raised, if no sufficient permissions are found
 # can be configured in the configure_permissions() function
-permission_exception = HTTPException(
-    status_code=HTTP_403_FORBIDDEN,
-    detail="Insufficient permissions",
-    headers={"WWW-Authenticate": "Bearer"},
-)
+def permission_exception(resource: Any, principals: Any ) -> HTTPException:
+    resource_acl = normalize_acl(resource)
+    details = {
+        "message": "Insufficient permissions",
+        "acl": force_str(resource_acl),
+        "permissions_resource": list_permissions(principals, resource)
+    }
+
+    return HTTPException(
+        status_code=HTTP_403_FORBIDDEN,
+        detail=details,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def configure_permissions(
@@ -157,7 +165,7 @@ def permission_dependency_factory(
     ):
         if has_permission(principals, permission, resource):
             return resource
-        raise permission_exception
+        raise permission_exception(resource, principals)
 
     return Depends(permission_dependency)
 
@@ -234,3 +242,9 @@ def is_like_list(something):
     if isinstance(something, str):
         return False
     return hasattr(something, "__iter__")
+
+def force_str(resources):
+    list_str = []
+    for a,b,c in resources:
+        list_str.append([a,str(b),str(c)])
+    return list_str
